@@ -38,11 +38,6 @@ Résultat :
 - fuite de VAULT_TOKEN
 - fuite de FLAG_VAULT
 
-## Correctif appliqué
-- suppression complète du endpoint `/debug`
-- ajout de handlers d'erreur génériques 403 / 404 / 500
-- suppression de l'exposition des variables d'environnement
-
 # Test après correction
 
 Commande :
