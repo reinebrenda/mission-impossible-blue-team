@@ -2,6 +2,9 @@ import os
 import re
 import json
 import requests
+import socket
+import ipaddress
+from urllib.parse import urlparse
 from requests.exceptions import RequestException
 from flask import Flask, request, jsonify, abort, make_response, render_template_string
 
@@ -18,7 +21,7 @@ HOME = """
   <li><a href="/status">/status</a></li>
   <li><a href="/whoami">/whoami</a></li>
   <li><a href="/fetch?url=https://example.com">/fetch</a> (⚠️ SSRF)</li>
-  <li><a href="/admin?token=...">/admin</a> (token)</li>
+  <li><a href="/admin">/admin</a> (secured)</li>
   <li><a href="/docs">/docs</a> (pistes DevSecOps)</li>
 </ul>
 <p><b>Note</b> : tout reste local. Les “flags” sont dans les variables d’environnement.</p>
@@ -32,24 +35,49 @@ def index():
 def status():
     return jsonify({"service": "escape-app-expert", "ok": True})
 
-# Weak identity: trusts a header set by reverse proxy (not present here)
+# Weak identity (left as-is for workshop)
 @app.get("/whoami")
 def whoami():
     user = request.headers.get("X-User", "anonymous")
     resp = make_response(jsonify({"user": user}))
-    # intentionally weak cookie settings for workshop
     resp.set_cookie("session", "dev", httponly=False, samesite="Lax")
     return resp
 
-# SSRF: fetch arbitrary URL from server side
-# Pedagogical angle: should implement allowlist + block internal ranges + DNS rebinding protection
+
+# 🔐 Helper: detect private IP
+def is_private_ip(hostname):
+    try:
+        ip = socket.gethostbyname(hostname)
+        return ipaddress.ip_address(ip).is_private
+    except:
+        return True
 
 
+# 🔴 SSRF FIX
 @app.get("/fetch")
 def fetch():
     url = request.args.get("url", "")
     if not url:
         return jsonify({"error": "Missing url parameter"}), 400
+
+    # Parse URL
+    parsed = urlparse(url)
+    hostname = parsed.hostname
+
+    if not hostname:
+        return jsonify({"error": "Invalid URL"}), 400
+
+    # Block dangerous schemes
+    if parsed.scheme not in ["http", "https"]:
+        return jsonify({"error": "Only http/https allowed"}), 400
+
+    # Block internal services
+    if hostname in ["localhost", "127.0.0.1", "vault"]:
+        return jsonify({"error": "Access denied"}), 403
+
+    # Block private IP ranges (Docker included)
+    if is_private_ip(hostname):
+        return jsonify({"error": "Private IP not allowed"}), 403
 
     if url.startswith("file://"):
         return jsonify({"error": "file:// URLs are not allowed"}), 400
@@ -61,24 +89,33 @@ def fetch():
             r.status_code,
             {"Content-Type": r.headers.get("Content-Type", "text/plain")},
         )
-    except RequestException as e:
-        # version pédagogique : message lisible côté client, sans stacktrace
+    except RequestException:
         return jsonify({
-            "error": "Upstream request failed",
-            "details": str(e)
+            "error": "Upstream request failed"
         }), 502
 
-# Admin protected by static token (still bad)
+
+# 🔐 SECURED ADMIN
 @app.get("/admin")
 def admin():
-    token = request.args.get("token", "")
-    if token != os.getenv("ADMIN_TOKEN", ""):
+    auth_header = request.headers.get("Authorization")
+
+    if not auth_header:
+        abort(401)
+
+    if not auth_header.startswith("Bearer "):
+        abort(401)
+
+    token = auth_header.split(" ")[1]
+
+    if token != os.getenv("ADMIN_TOKEN"):
         abort(403)
+
     return jsonify({
         "admin": True,
-        "flag_supply_chain": os.getenv("FLAG_SUPPLY", "FLAG{missing}"),
-        "hint": "Try auditing the pipeline scripts & dependencies. Also check internal services.",
+        "flag_supply_chain": os.getenv("FLAG_SUPPLY", "FLAG{missing}")
     })
+
 
 @app.get("/docs")
 def docs():
@@ -93,8 +130,7 @@ def docs():
 <p>Tip: there is an internal service on the Docker network you should not be able to read from the web app.</p>
 """)
 
+
 if __name__ == "__main__":
     debug = os.getenv("FLASK_DEBUG", "0") == "1"
     app.run(host="0.0.0.0", port=5000, debug=debug)
-
-
