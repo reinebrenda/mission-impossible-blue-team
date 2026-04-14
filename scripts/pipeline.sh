@@ -9,6 +9,9 @@ pip3 install pytest pip-audit
 echo "🔹 Running tests..."
 pytest
 
+echo "🔹 Installing project dependencies..."
+pip install -r web/requirements.txt
+
 echo "🔹 Auditing dependencies..."
 pip-audit
 
