@@ -12,10 +12,9 @@ pytest
 echo "🔹 Installing project dependencies..."
 pip install -r web/requirements.txt
 
-pip install --upgrade pip
 
 echo "🔹 Auditing dependencies..."
-pip-audit
+pip-audit  --strict
 
 echo "🔹 Building Docker image..."
 docker build -t myapp .
