@@ -25,6 +25,7 @@ services:
     working_dir: /work
     volumes:
       - ./:/work
+      - /var/run/docker.sock:/var/run/docker.sock  # allow running docker commands from inside the container
     entrypoint: ["/bin/sh","-lc"]
     command: ["./scripts/pipeline.sh"]
     profiles: ["ci"]
