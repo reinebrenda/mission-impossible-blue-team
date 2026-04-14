@@ -16,3 +16,4 @@ pyopenssl>=26.0.0
 setuptools>=78.1.1
 twisted>=24.7.0rc1
 wheel>=0.46.2
+pip>=26.0.3
