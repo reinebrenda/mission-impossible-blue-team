@@ -2,7 +2,7 @@ name: DevSecOps Pipeline
 
 on:
   push:
-    branches: ["main"]
+    branches: ["*"]
   pull_request:
 
 jobs:
@@ -15,4 +15,4 @@ jobs:
 
       - name: Run pipeline
         run: sh scripts/pipeline.sh
-        # Note: the pipeline script should be designed to run in a CI environment, and can include steps like building Docker images, running tests, etc.
+        #
