@@ -3,8 +3,6 @@ set -e
 
 echo "🔹 Installing system dependencies..."
 sudo apt-get update
-sudo apt-get install -y python3 python3-pip curl docker.io
-
 echo "🔹 Installing Python tools..."
 pip3 install pytest pip-audit
 
