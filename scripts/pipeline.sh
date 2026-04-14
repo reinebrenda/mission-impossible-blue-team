@@ -1,25 +1,26 @@
 #!/bin/sh
-set -e  # stop immédiatement si erreur
+set -e
 
-echo "🔹 Installing dependencies..."
-apk add --no-cache python3 py3-pip curl
+echo "🔹 Installing system dependencies..."
+sudo apt-get update
+sudo apt-get install -y python3 python3-pip curl docker.io
 
 echo "🔹 Installing Python tools..."
-pip install --break-system-packages pytest pip-audit
+pip3 install pytest pip-audit
 
 echo "🔹 Running tests..."
-pytest || exit 1
+pytest
 
 echo "🔹 Auditing dependencies..."
-pip-audit || exit 1
+pip-audit
+
+echo "🔹 Building Docker image..."
+docker build -t myapp .
 
 echo "🔹 Installing Trivy..."
 curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
 
-echo "🔹 Building Docker image..."
-docker build -t test-app . || exit 1
-
 echo "🔹 Scanning Docker image..."
-./bin/trivy image --exit-code 1 --severity HIGH,CRITICAL test-app
+./bin/trivy image --exit-code 1 --severity HIGH,CRITICAL myapp
 
 echo "✅ Pipeline finished successfully"
