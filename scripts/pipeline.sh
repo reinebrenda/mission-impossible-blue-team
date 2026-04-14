@@ -10,7 +10,7 @@ echo "🔹 Running tests..."
 pytest
 
 echo "🔹 Installing project dependencies..."
-pip install -r web/requirements.
+pip install -r web/requirements.txt
 
 pip install --upgrade pip
 
