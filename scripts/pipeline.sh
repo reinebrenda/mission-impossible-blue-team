@@ -17,10 +17,10 @@ pip-audit
 echo "🔹 Building Docker image..."
 docker build -t myapp .
 
-echo "🔹 Installing Trivy..."
+echo "🔹 Installing Trivy"
 curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
 
-echo "🔹 Scanning Docker image..."
+echo "🔹 Scanning Docker image..." 
 ./bin/trivy image --exit-code 1 --severity HIGH,CRITICAL myapp
 
 echo "✅ Pipeline finished successfully"
