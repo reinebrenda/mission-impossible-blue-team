@@ -110,15 +110,19 @@ def fetch():
 
 @app.get("/admin")
 def admin():
+    auth_header = request.headers.get("Authorization")
+
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return jsonify({"error": "Missing or invalid Authorization header"}), 401
+
+    token = auth_header.split(" ")[1]
     expected_token = os.getenv("ADMIN_TOKEN")
 
     if not expected_token:
-        return jsonify({"error": "Admin token not configured"}), 500
+        return jsonify({"error": "Server misconfiguration"}), 500
 
-    token = request.args.get("token")
-
-    if not token or token != expected_token:
-        abort(403)
+    if token != expected_token:
+        return jsonify({"error": "Forbidden"}), 403
 
     return jsonify({
         "admin": True,
