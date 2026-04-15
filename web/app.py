@@ -110,17 +110,20 @@ def fetch():
 
 @app.get("/admin")
 def admin():
-    token = request.args.get("token", "")
+    expected_token = os.getenv("ADMIN_TOKEN")
 
-    if token != os.getenv("ADMIN_TOKEN", ""):
+    if not expected_token:
+        return jsonify({"error": "Admin token not configured"}), 500
+
+    token = request.args.get("token")
+
+    if not token or token != expected_token:
         abort(403)
 
     return jsonify({
         "admin": True,
         "flag_supply_chain": os.getenv("FLAG_SUPPLY", "FLAG{missing}")
     })
-
-
 # =========================
 
 if __name__ == "__main__":
