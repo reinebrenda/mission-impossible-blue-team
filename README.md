@@ -13,6 +13,9 @@ Projet DevSecOps de sécurisation applicative après phase Red Team.
 - `vault/` : service interne
 - `docs/` : documentation des correctifs Blue Team
 
+# Documentation
+- `docs/RECAP_PROJET_SECURITE.md`
+
 # Branches
 Chaque membre travaille sur sa propre branche :
 - `blue/brenda-infoleak`
