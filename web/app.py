@@ -45,14 +45,31 @@ def whoami():
 # Pedagogical angle: should implement allowlist + block internal ranges + DNS rebinding protection
 
 
+
 @app.get("/fetch")
 def fetch():
     url = request.args.get("url", "")
     if not url:
         return jsonify({"error": "Missing url parameter"}), 400
 
-    if url.startswith("file://"):
-        return jsonify({"error": "file:// URLs are not allowed"}), 400
+    parsed = urlparse(url)
+
+    # 1. Vérifier le schéma
+    if parsed.scheme not in ["http", "https"]:
+        return jsonify({"error": "Only http/https allowed"}), 400
+
+    hostname = parsed.hostname
+
+    if not hostname:
+        return jsonify({"error": "Invalid URL"}), 400
+
+    # 2. Bloquer localhost & services internes
+    if hostname in ["localhost", "127.0.0.1", "vault"]:
+        return jsonify({"error": "Access denied"}), 403
+
+    # 3. Bloquer IP privées (SSRF interne)
+    if is_private_ip(hostname):
+        return jsonify({"error": "Private IP not allowed"}), 403
 
     try:
         r = requests.get(url, timeout=2)
@@ -61,13 +78,8 @@ def fetch():
             r.status_code,
             {"Content-Type": r.headers.get("Content-Type", "text/plain")},
         )
-    except RequestException as e:
-        # version pédagogique : message lisible côté client, sans stacktrace
-        return jsonify({
-            "error": "Upstream request failed",
-            "details": str(e)
-        }), 502
-
+    except RequestException:
+        return jsonify({"error": "Upstream request failed"}), 502
 # Admin protected by static token (still bad)
 @app.get("/admin")
 def admin():
